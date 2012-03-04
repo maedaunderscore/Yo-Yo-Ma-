@@ -3,6 +3,9 @@ package info.dynagoya.yoyoma
 import unfiltered.request._
 import unfiltered.response._
 
+import scalaz._
+import Scalaz._
+
 object Shell{
   import scala.sys.process._
   import unfiltered.filter._
@@ -23,12 +26,14 @@ object Shell{
   ) = new Plan.Intent{
     override def isDefinedAt(x: Request) = serve.isDefinedAt(x)
     override def apply(x: Request) = try {
-      response( Runner(command(serve(x))))
+      x |> serve |> command |> Runner.apply |> response
     } catch { case ex => BadRequest ~> ResponseString(ex.toString) }
   }
+
+
   import java.net.URLDecoder.decode
   def byPath(path: String): Request ~~> Args = {
-    case Path(Seg(`path` :: xs)) => xs map { x => decode(x, "UTF-8") }
+    case Path(Seg(`path` :: xs)) => xs map { decode(_, "UTF-8") }
   }
       
   def noArgs(command: String): Args ~~> ProcessBuilder = { case _ => command }
@@ -39,8 +44,6 @@ object Shell{
     case xs => Process(command, xs)
   }
 
-  import scalaz._
-  import Scalaz._
   def combine(f1: Response, f2: Response) = (f1 &&& f2) >>> { _.fold(_ ~> _) }
   def responseRaw(result: Result) = ResponseString(result._1)
   def responseStatus(result: Result) = if(result._2 == 0) Ok else BadRequest
