@@ -6,9 +6,13 @@ import dispatch._
 
 object ExampleSpec extends Specification with unfiltered.spec.jetty.Served {
   
-  import scala.sys.process._
   def setup = { _.filter(new unfiltered.filter.Plan{
     import Shell._
+    import scala.sys.process._
+    import unfiltered.request._
+
+    object Body extends Params.Extract("body", Params.first)
+
     def intent = 
       ("ls test_dir".arity0 by path("ls")) orElse
       ("ls".arity1 by path("ls2")) orElse
@@ -16,7 +20,8 @@ object ExampleSpec extends Specification with unfiltered.spec.jetty.Served {
       (path("echo2") run "echo".arityN ) orElse
       ("echo".arityN by path("echo3") into Template.resultAsPre("Run echo")) orElse
       (("echo test" #> "cat -") by path("test")) orElse
-      (path("test2") run ("echo test" #> "cat -"))
+      (path("test2") run ("echo test" #> "cat -")) orElse
+      (("ls".arity1) by { case Params(Body(body)) => List(body) })
   }) }
   
   val http = new Http
@@ -69,6 +74,10 @@ object ExampleSpec extends Specification with unfiltered.spec.jetty.Served {
 
     "work if process is piped and path is ahead" in {
       Http.when(_ == 200)((host / "test2") as_str) must_== "test\n"
+    }
+
+    "serve POST request" in{
+      Http.when(_ == 200)((host / "test3" << Map("body" -> "test_dir")) as_str) must_== "a\nb\n"
     }
   }
 }
