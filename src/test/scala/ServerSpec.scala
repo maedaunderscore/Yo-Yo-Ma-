@@ -13,8 +13,8 @@ object ExampleSpec extends Specification with unfiltered.spec.jetty.Served {
     def intent = 
       ("ls test_dir".run by path("ls")) orElse
       ("ls".arity1 by path("ls2")) orElse
-      "echo".arity1 orElse
-      ("echo".arityN by path("echo2")) orElse
+      (path("echo") run "echo".arity1) orElse
+      (path("echo2") run "echo".arityN ) orElse
       ("echo".arityN by path("echo3") into Template.resultAsPre("Run echo"))
   }) }
   

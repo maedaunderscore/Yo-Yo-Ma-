@@ -30,16 +30,18 @@ object Shell{
     def pure = Flow(None, None, None)
     def path(p: String) = Flow(Some(Shell.path(p)), None, None)
   }
-  object Run{
-    def apply(command: String) = Flow.pure run noArgs(command) by path(command)
-  }
 
   implicit def stringToRun(command: String) = new {
-    def run = Flow.path(command) run noArgs(command)
-    def arity1 = Flow.path(command) run { case x :: Nil => Process(command, Seq(x)) }
-    def arity2 = Flow.path(command) run { case x1 :: x2 :: Nil => Process(command, Seq(x1, x2)) }
-    def arityN = Flow.path(command) run { case xs => Process(command, xs) }
+    def run = noArgs(command)
+    def arity1:Args ~~> ProcessBuilder = { case x :: Nil => Process(command, Seq(x)) }
+    def arity2:Args ~~> ProcessBuilder = { 
+      case x1 :: x2 :: Nil => Process(command, Seq(x1, x2)) 
+    }
+    def arityN:Args ~~> ProcessBuilder = { case xs  => Process(command, xs) }
   }
+
+  implicit def runToFlow(f: Args ~~> ProcessBuilder) = Flow.pure run f
+  implicit def serveToFlow(f: Request ~~> Args) = Flow.pure by f
 
   implicit def makeIntent(flow : Flow):Plan.Intent = makeIntent(
     flow.serve.get, flow.run.get, flow.response.getOrElse(defaultResponse)
