@@ -24,15 +24,19 @@ object Shell{
   ){
     def by(f: Request ~~> Args) = copy(serve = Some(f))
     def run(f: Args ~~> ProcessBuilder) = copy(run = Some(f))
+    def run(p: ProcessBuilder) = copy(run = Some({ case _ => p }))
     def into(f: Response) = copy(response = (response map { combine(_, f) }) orElse Some(f))
   }
   object Flow{
     def pure = Flow(None, None, None)
     def path(p: String) = Flow(Some(Shell.path(p)), None, None)
   }
+  implicit def processBuilderToFlow(process: ProcessBuilder) = 
+    Flow.pure run process 
 
   implicit def stringToRun(command: String) = new {
     def run = noArgs(command)
+    def arity0 = noArgs(command)
     def arity1:Args ~~> ProcessBuilder = { case x :: Nil => Process(command, Seq(x)) }
     def arity2:Args ~~> ProcessBuilder = { 
       case x1 :: x2 :: Nil => Process(command, Seq(x1, x2)) 
