@@ -11,11 +11,11 @@ object ExampleSpec extends Specification with unfiltered.spec.jetty.Served {
   def setup = { _.filter(new unfiltered.filter.Plan{
     import Shell._
     def intent = 
-      run("ls",    "ls test_dir") orElse
-      run("ls2",   oneArgs("ls")) orElse
-      run("echo",  oneArgs("echo")) orElse
-      run("echo2", manyArgs("echo")) orElse
-      run("echo3", manyArgs("echo"), Template.resultAsPre("Run echo"))
+      ("ls test_dir".run by path("ls")) orElse
+      ("ls".arity1 by path("ls2")) orElse
+      "echo".arity1 orElse
+      ("echo".arityN by path("echo2")) orElse
+      ("echo".arityN by path("echo3") into Template.resultAsPre("Run echo"))
   }) }
   
   val http = new Http
